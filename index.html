@@ -815,7 +815,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_oA062f13-ltbmPwReF8anw_3HhAv71p';
 /* Base URL this app is deployed at (e.g. your GitHub Pages URL, ending in /).
    Used to build the QR-code link on printed PDF reports so it points to
    view.html on the same site. Fill this in after you deploy. */
-const APP_BASE_URL = 'https://github.com/panawatsik-sik/Durian_Dry_Matter/';
+const APP_BASE_URL = 'https://panawatsik-sik.github.io/Durian_Dry_Matter/';
 
 let sb = null;
 let currentUserId = null;
@@ -992,35 +992,60 @@ function b64EncodeUnicode(str){
   return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m,p1)=>String.fromCharCode('0x'+p1)));
 }
 
-/* compact raw-data payload for the QR code — short keys keep the code scannable */
+/* compact raw-data payload for the QR code — short keys + rounded numbers
+   keep the code physically simple enough to scan reliably after printing */
 function buildQrUrl(r){
+  const round2 = n => Math.round((n||0)*100)/100;
   const payload = {
     v: r.variety, f: r.farm||'', p: r.plot||'', d: r.date, m: r.method, w: r.wmode,
     th: (r.threshold===null||r.threshold===undefined) ? null : r.threshold,
     st: r.status, pct: r.pct, daa: r.daa||'', gps: r.gps||'',
-    s: (r.samples||[]).map(s=>[s.seq, s.fruitWeight||0, s.fresh||0, s.plate||0, s.dry||0, s.pct])
+    s: (r.samples||[]).map(s=>[s.seq, round2(s.fruitWeight), round2(s.fresh), round2(s.plate), round2(s.dry), s.pct])
   };
   const encoded = encodeURIComponent(b64EncodeUnicode(JSON.stringify(payload)));
   return APP_BASE_URL.replace(/\/?$/, '/') + 'view.html?d=' + encoded;
 }
 
-/* renders the actual QR code into the report just before it's captured to canvas / printed */
+/* renders the actual QR code into the report just before it's captured to canvas / printed.
+   Returns a promise that resolves once the QR image has actually finished drawing —
+   qrcodejs renders async in some browsers, so capturing too early produces a blank
+   or partial (unscannable) code. */
 function injectQRCode(r){
-  const box = document.getElementById('qr-code-box');
-  if(!box) return;
-  if(APP_BASE_URL.includes('YOUR_') || !window.QRCode){
-    box.parentElement.classList.add('hidden');
-    return;
-  }
-  try{
-    new QRCode(box, { text: buildQrUrl(r), width: 92, height: 92, correctLevel: QRCode.CorrectLevel.M });
-  }catch(e){ box.parentElement.classList.add('hidden'); }
+  return new Promise(resolve=>{
+    const box = document.getElementById('qr-code-box');
+    if(!box){ resolve(); return; }
+    if(APP_BASE_URL.includes('YOUR_') || !window.QRCode){
+      box.parentElement.classList.add('hidden');
+      resolve();
+      return;
+    }
+    try{
+      new QRCode(box, { text: buildQrUrl(r), width: 140, height: 140, correctLevel: QRCode.CorrectLevel.M });
+    }catch(e){
+      box.parentElement.classList.add('hidden');
+      resolve();
+      return;
+    }
+    // qrcodejs draws to <canvas> then mirrors it into an <img> for compatibility;
+    // wait for that <img> to actually finish loading before anything captures this DOM.
+    let tries = 0;
+    const check = () => {
+      const img = box.querySelector('img');
+      tries++;
+      if((img && img.complete && img.naturalWidth > 0) || tries > 20){
+        resolve();
+      } else {
+        setTimeout(check, 30);
+      }
+    };
+    check();
+  });
 }
 
-function printFallback(r){
+async function printFallback(r){
   const area = document.getElementById('print-area');
   area.innerHTML = buildReportHTML(r);
-  injectQRCode(r);
+  await injectQRCode(r);
   setTimeout(()=>window.print(), 80);
 }
 
@@ -1030,7 +1055,7 @@ async function downloadPDF(r){
   if(!window.html2canvas || !window.jspdf){ printFallback(r); return; }
   const capture = document.getElementById('pdf-capture');
   capture.innerHTML = `<div style="padding:32px;">${buildReportHTML(r)}</div>`;
-  injectQRCode(r);
+  await injectQRCode(r);
   await new Promise(res=>setTimeout(res, 80));
   try{
     const canvas = await html2canvas(capture, {scale:2, backgroundColor:'#ffffff'});
