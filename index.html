@@ -469,6 +469,15 @@ function setLang(l){
   renderHistory();
 }
 
+/* ---------- view switching ---------- */
+function showView(v){
+  document.getElementById('view-record').classList.toggle('hidden', v!=='record');
+  document.getElementById('view-history').classList.toggle('hidden', v!=='history');
+  document.getElementById('tab-record').classList.toggle('active', v==='record');
+  document.getElementById('tab-history').classList.toggle('active', v==='history');
+  if(v==='history') renderHistory();
+}
+
 /* ---------- thresholds ----------
    No official threshold values are assumed for varieties other than
    the four listed here (per มกษ. 3-2567). Add more if you have
