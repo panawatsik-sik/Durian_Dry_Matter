@@ -739,7 +739,10 @@ function computeFarmResult(f){
   const perSample = f.samples.map((s, idx)=>{
     const dry = sampleDry(s);
     const pct = s.fresh>0 ? (dry/s.fresh*100) : 0;
-    return { seq: idx+1, fruitWeight: s.fruitWeight||0, fresh: s.fresh, plate: s.plate||0, dry, pct: Math.round(pct*10)/10 };
+    const rawRounds = (wmode==='precise')
+      ? s.rounds.filter(v=>v!==null && v!==undefined && !isNaN(v)).map(v=>Math.round(v*100)/100)
+      : null;
+    return { seq: idx+1, fruitWeight: s.fruitWeight||0, fresh: s.fresh, plate: s.plate||0, dry, pct: Math.round(pct*10)/10, rounds: rawRounds };
   });
   const avgPct = perSample.length ? perSample.reduce((a,b)=>a+b.pct,0)/perSample.length : 0;
   const failingSamples = (threshold===null || threshold===undefined) ? [] : perSample.filter(p=>p.pct < threshold);
@@ -815,7 +818,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_oA062f13-ltbmPwReF8anw_3HhAv71p';
 /* Base URL this app is deployed at (e.g. your GitHub Pages URL, ending in /).
    Used to build the QR-code link on printed PDF reports so it points to
    view.html on the same site. Fill this in after you deploy. */
-const APP_BASE_URL = 'https://panawatsik-sik.github.io/Durian_Dry_Matter/';
+const APP_BASE_URL = 'YOUR_DEPLOYED_APP_URL/';
 
 let sb = null;
 let currentUserId = null;
@@ -1000,7 +1003,7 @@ function buildQrUrl(r){
     v: r.variety, f: r.farm||'', p: r.plot||'', d: r.date, m: r.method, w: r.wmode,
     th: (r.threshold===null||r.threshold===undefined) ? null : r.threshold,
     st: r.status, pct: r.pct, daa: r.daa||'', gps: r.gps||'',
-    s: (r.samples||[]).map(s=>[s.seq, round2(s.fruitWeight), round2(s.fresh), round2(s.plate), round2(s.dry), s.pct])
+    s: (r.samples||[]).map(s=>[s.seq, round2(s.fruitWeight), round2(s.fresh), round2(s.plate), round2(s.dry), s.pct, s.rounds||null])
   };
   const encoded = encodeURIComponent(b64EncodeUnicode(JSON.stringify(payload)));
   return APP_BASE_URL.replace(/\/?$/, '/') + 'view.html?d=' + encoded;
