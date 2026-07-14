@@ -354,6 +354,7 @@ svg{display:block;}
 
     <!-- HISTORY VIEW -->
     <div id="view-history" class="hidden">
+      <input type="text" id="farm-search" oninput="setFarmSearch(this.value)" placeholder="ค้นหาชื่อสวน/แปลง..." data-i18n-ph="search_farm_placeholder" style="margin-bottom:10px;">
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:2px;">
         <select id="year-filter" onchange="setYearFilter(this.value)" style="width:auto;flex-shrink:0;font-size:12.5px;height:34px;padding:0 8px;"></select>
         <div class="filter-row" id="filter-row" style="margin-bottom:0;flex:1;"></div>
@@ -424,6 +425,7 @@ const dict = {
   lbl_farm_samples:{th:'ตัวอย่างของสวนนี้',en:'Fruit samples for this farm'},
   btn_calc_save_all:{th:'คำนวณและบันทึกทั้งหมด',en:'Calculate & save all'},
   batch_results_title:{th:'ผลของรอบนี้',en:'Results for this round'},
+  no_farm_name:{th:'(ไม่ได้ระบุชื่อสวน)',en:'(no farm name)'},
   avg_label:{th:'ค่าเฉลี่ยจาก',en:'Average of'},
   breakdown_title:{th:'ผลแต่ละลูก',en:'Per-fruit results'},
   btn_print:{th:'ดาวน์โหลดรายงาน PDF',en:'Download PDF report'},
@@ -1192,6 +1194,7 @@ function downloadBatchExcel(){
 /* ---------- history ---------- */
 let activeFilter = 'all';
 let activeYear = 'all';
+let activeSearch = '';
 let historyCache = {};
 async function renderHistory(){
   const all = await loadAllRecords();
@@ -1213,9 +1216,11 @@ async function renderHistory(){
   yearSelect.value = activeYear;
 
   const list = document.getElementById('history-list');
+  const searchQ = (activeSearch||'').trim().toLowerCase();
   const filtered = all.filter(r=>
     (activeFilter==='all' || r.variety===activeFilter) &&
-    (activeYear==='all' || new Date(r.date).getFullYear()===Number(activeYear))
+    (activeYear==='all' || new Date(r.date).getFullYear()===Number(activeYear)) &&
+    (searchQ==='' || (r.farm||'').toLowerCase().includes(searchQ) || (r.plot||'').toLowerCase().includes(searchQ))
   );
 
   if(filtered.length===0){
@@ -1226,12 +1231,12 @@ async function renderHistory(){
     const color = r.status==='pass' ? {bg:'#E7F3EA',fg:'#3F8F5C'} : r.status==='fail' ? {bg:'#FBEBE8',fg:'#C24A3D'} : {bg:'#EFEFEA',fg:'#5C6B57'};
     const d = new Date(r.date);
     const dateStr = d.toLocaleDateString(lang==='th'?'th-TH':'en-GB', {day:'numeric',month:'short',year:'numeric'});
-    const place = [r.farm, r.plot].filter(Boolean).join(' / ');
+    const place = [r.farm, r.plot].filter(Boolean).join(' / ') || t('no_farm_name');
     return `<div class="hist-card">
       <div class="hist-pct" style="background:${color.bg};color:${color.fg};">${r.pct.toFixed(1)}%</div>
       <div class="hist-body">
-        <p class="v">${r.variety}${place ? ' · '+place : ''}</p>
-        <p class="m">${dateStr} · ${r.method==='mw' ? t('method_mw') : t('method_oven')} · ${r.sampleCount||1} ${t('samples_count')}</p>
+        <p class="v">${place}</p>
+        <p class="m">${r.variety} · ${dateStr} · ${r.method==='mw' ? t('method_mw') : t('method_oven')} · ${r.sampleCount||1} ${t('samples_count')}</p>
       </div>
       <button class="hist-del" onclick="downloadPDF(historyCache['${r.id}'])" title="download PDF">📄</button>
       <button class="hist-del" onclick="downloadExcel(historyCache['${r.id}'])" title="download Excel">📊</button>
@@ -1249,6 +1254,7 @@ function populateSuggestions(all){
 }
 function setFilter(v){ activeFilter = v; renderHistory(); }
 function setYearFilter(v){ activeYear = v; renderHistory(); }
+function setFarmSearch(v){ activeSearch = v; renderHistory(); }
 async function deleteRecord(id){
   if(!supabaseReady) return;
   try{ await sb.from('durian_tests').delete().eq('id', id); }catch(e){}
