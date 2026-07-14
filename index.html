@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ทุ.แห้ง — เครื่องคำนวณน้ำหนักแห้งทุเรียน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Noto+Sans+Thai:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --forest:#1F3D2B;
+  --forest-light:#2E5A3F;
+  --gold:#E8A33D;
+  --gold-dark:#B87C22;
+  --cream:#F5F7ED;
+  --card:#FFFFFF;
+  --thorn:#4A3728;
+  --text-primary:#22291F;
+  --text-secondary:#5C6B57;
+  --text-muted:#94A08E;
+  --success:#3F8F5C;
+  --success-bg:#E7F3EA;
+  --danger:#C24A3D;
+  --danger-bg:#FBEBE8;
+  --border:#E1E4D8;
+  --border-strong:#C7CDBA;
+  --radius:14px;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--cream);
+  color:var(--text-primary);
+  font-family:'Noto Sans Thai','Inter',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.display{
+  font-family:'Kanit','Noto Sans Thai',sans-serif;
+  font-weight:600;
+  letter-spacing:0.2px;
+}
+.mono{font-family:'JetBrains Mono',monospace;}
+#app{max-width:480px;margin:0 auto;padding:0 0 3rem;min-height:100vh;}
+
+/* top bar */
+.topbar{
+  background:var(--forest);
+  color:#fff;
+  padding:1.1rem 1.25rem 1.4rem;
+  border-radius:0 0 20px 20px;
+  position:relative;
+  overflow:hidden;
+}
+.topbar-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-mark{
+  width:38px;height:38px;border-radius:10px;
+  background:var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Kanit';font-weight:700;font-size:17px;color:var(--forest);
+  flex-shrink:0;
+}
+.brand-text h1{font-size:17px;margin:0;color:#fff;line-height:1.2;}
+.brand-text p{font-size:11px;margin:1px 0 0;color:#C9D6C4;letter-spacing:0.3px;}
+.lang-toggle{
+  display:flex;background:rgba(255,255,255,0.12);border-radius:999px;padding:2px;
+}
+.lang-toggle button{
+  border:none;background:transparent;color:#C9D6C4;font-size:12px;padding:5px 11px;
+  border-radius:999px;cursor:pointer;font-family:inherit;font-weight:500;
+}
+.lang-toggle button.active{background:var(--gold);color:var(--forest);}
+.tabs{display:flex;gap:8px;margin-top:1.1rem;}
+.tab-btn{
+  flex:1;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);
+  color:#E4E9DC;font-size:13px;font-weight:500;padding:9px 10px;border-radius:10px;
+  cursor:pointer;font-family:'Noto Sans Thai';display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.tab-btn.active{background:#fff;color:var(--forest);}
+
+/* thorn strip decoration */
+.thornstrip{position:absolute;bottom:-1px;left:0;right:0;height:10px;display:flex;}
+.thornstrip span{flex:1;height:10px;background:var(--cream);clip-path:polygon(50% 0,100% 100%,0 100%);}
+
+main{padding:1.25rem;}
+.section-label{font-size:12px;color:var(--text-secondary);font-weight:500;margin:0 0 6px 2px;text-transform:uppercase;letter-spacing:0.5px;}
+
+.card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.1rem 1.1rem 1.2rem;margin-bottom:14px;
+}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:13px;color:var(--text-secondary);margin-bottom:5px;font-weight:500;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+input[type=text],input[type=number],select{
+  width:100%;height:42px;border:1px solid var(--border-strong);border-radius:10px;
+  padding:0 12px;font-size:14px;font-family:'Noto Sans Thai';background:#FBFCF8;color:var(--text-primary);
+}
+input:focus,select:focus{outline:none;border-color:var(--gold-dark);box-shadow:0 0 0 3px rgba(232,163,61,0.18);}
+.gps-row{display:flex;gap:8px;}
+.gps-row input{flex:1;}
+.icon-btn{
+  width:42px;height:42px;border-radius:10px;border:1px solid var(--border-strong);
+  background:#FBFCF8;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
+}
+.threshold-chip{
+  display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;
+  background:var(--success-bg);color:var(--success);padding:3px 9px;border-radius:999px;margin-top:6px;
+}
+.threshold-chip.none{background:#EFEFEA;color:var(--text-muted);}
+
+.seg{display:flex;gap:8px;}
+.seg button{
+  flex:1;border:1px solid var(--border-strong);background:#FBFCF8;color:var(--text-secondary);
+  font-size:13px;font-weight:500;padding:10px 8px;border-radius:10px;cursor:pointer;font-family:'Noto Sans Thai';
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+}
+.seg button.active{background:var(--forest);border-color:var(--forest);color:#fff;}
+.hint{font-size:12px;color:var(--text-muted);margin-top:8px;line-height:1.5;}
+
+.log-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.log-row .rnum{
+  width:24px;height:24px;border-radius:7px;background:var(--forest);color:#fff;font-size:11px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'JetBrains Mono';
+}
+.log-row input{flex:1;}
+.log-row .del{width:32px;height:32px;flex-shrink:0;border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:16px;}
+.add-round{
+  width:100%;border:1.5px dashed var(--border-strong);background:transparent;color:var(--text-secondary);
+  padding:9px;border-radius:10px;font-size:13px;cursor:pointer;font-family:'Noto Sans Thai';font-weight:500;
+}
+.stable-tag{font-size:12px;font-weight:500;margin-top:4px;display:flex;align-items:center;gap:5px;}
+.stable-tag.ok{color:var(--success);}
+.stable-tag.warn{color:var(--danger);}
+
+.sample-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:0.9rem 1rem 1rem;margin-bottom:10px;
+}
+.sample-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.sample-head .num{
+  display:flex;align-items:center;gap:8px;font-family:'Kanit';font-weight:600;font-size:14px;color:var(--forest);
+}
+.sample-head .num span.dot{
+  width:24px;height:24px;border-radius:7px;background:var(--forest);color:#fff;font-size:12px;
+  display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono';font-weight:600;
+}
+.sample-remove{border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:17px;padding:4px 6px;}
+.breakdown-chip{
+  display:flex;align-items:center;justify-content:space-between;font-size:12.5px;
+  padding:8px 10px;border-radius:10px;background:#F7F8F2;margin-bottom:6px;
+}
+.breakdown-chip .n{font-weight:500;color:var(--text-secondary);}
+.breakdown-chip .p{font-family:'JetBrains Mono';font-weight:600;}
+.breakdown-chip .p.pass{color:var(--success);}
+.breakdown-chip .p.fail{color:var(--danger);}
+
+.primary-btn{
+  width:100%;background:var(--gold);color:var(--forest);border:none;padding:13px;
+  border-radius:12px;font-size:15px;font-weight:600;font-family:'Kanit';cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.primary-btn:active{transform:scale(0.99);}
+.ghost-btn{
+  width:100%;background:transparent;color:var(--text-secondary);border:1px solid var(--border-strong);
+  padding:11px;border-radius:12px;font-size:13.5px;font-weight:500;cursor:pointer;font-family:'Noto Sans Thai';
+}
+
+/* gauge */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:6px 0 2px;}
+.gauge-val{font-family:'JetBrains Mono';font-size:38px;font-weight:600;margin-top:-58px;}
+.gauge-sub{font-size:12px;color:var(--text-secondary);margin-top:2px;}
+.status-badge{
+  margin-top:14px;display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:999px;
+  font-size:14px;font-weight:600;font-family:'Kanit';
+}
+.status-badge.pass{background:var(--success-bg);color:var(--success);}
+.status-badge.fail{background:var(--danger-bg);color:var(--danger);}
+.status-badge.neutral{background:#EFEFEA;color:var(--text-secondary);}
+.disclaimer{
+  font-size:11.5px;color:var(--text-muted);text-align:center;margin-top:12px;line-height:1.5;
+  padding:0 8px;
+}
+
+/* history */
+.hist-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:0.9rem 1rem;margin-bottom:10px;display:flex;align-items:center;gap:12px;
+}
+.hist-pct{
+  width:52px;height:52px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono';font-weight:600;font-size:14px;
+}
+.hist-body{flex:1;min-width:0;}
+.hist-body .v{font-size:13.5px;font-weight:600;font-family:'Kanit';margin:0;}
+.hist-body .m{font-size:12px;color:var(--text-secondary);margin:2px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hist-del{border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:6px;flex-shrink:0;}
+.empty{text-align:center;padding:3rem 1rem;color:var(--text-muted);}
+.empty .em-mark{font-size:40px;margin-bottom:8px;}
+.filter-row{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;padding-bottom:2px;}
+.filter-chip{
+  flex-shrink:0;border:1px solid var(--border-strong);background:#fff;color:var(--text-secondary);
+  font-size:12.5px;padding:6px 13px;border-radius:999px;cursor:pointer;font-weight:500;white-space:nowrap;
+}
+.filter-chip.active{background:var(--forest);border-color:var(--forest);color:#fff;}
+svg{display:block;}
+.hidden{display:none !important;}
+
+#print-area{display:none;}
+.rpt{font-family:'Noto Sans Thai',sans-serif;color:#111;background:#fff;padding:0;}
+.rpt h2{font-family:'Kanit';font-size:18px;margin:0 0 2px;color:#111;}
+.rpt .rpt-sub{font-size:12px;color:#555;margin:0 0 16px;}
+.rpt table{width:100%;border-collapse:collapse;margin:10px 0 14px;font-size:12.5px;}
+.rpt th,.rpt td{border:1px solid #999;padding:6px 8px;text-align:left;}
+.rpt th{background:#f0f0f0;font-weight:600;}
+.rpt .rpt-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;font-size:13px;margin-bottom:10px;}
+.rpt .rpt-meta div span{color:#555;}
+.rpt .rpt-result{font-size:15px;font-weight:600;margin:14px 0 4px;}
+.rpt .rpt-sign{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:50px;font-size:12.5px;}
+.rpt .rpt-sign .line{border-top:1px solid #999;margin-top:36px;padding-top:4px;}
+.rpt .rpt-foot{font-size:10.5px;color:#777;margin-top:24px;}
+
+@media print{
+  body *{visibility:hidden;}
+  #print-area, #print-area *{visibility:visible;}
+  #print-area{display:block;position:absolute;top:0;left:0;width:100%;padding:24px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="brand">
+        <div class="brand-mark">ทุ</div>
+        <div class="brand-text">
+          <h1 data-i18n="app_name">ทุ.แห้ง</h1>
+          <p data-i18n="app_sub">เครื่องคำนวณน้ำหนักแห้งทุเรียน</p>
+        </div>
+      </div>
+      <div class="lang-toggle">
+        <button id="lang-th" class="active" onclick="setLang('th')">TH</button>
+        <button id="lang-en" onclick="setLang('en')">EN</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-record" onclick="showView('record')">
+        <i>✎</i><span data-i18n="tab_record">บันทึกผล</span>
+      </button>
+      <button class="tab-btn" id="tab-history" onclick="showView('history')">
+        <i>≡</i><span data-i18n="tab_history">ประวัติ</span>
+      </button>
+    </div>
+    <div class="thornstrip">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <main>
+
+    <!-- RECORD VIEW -->
+    <div id="view-record">
+      <p class="section-label" data-i18n="lbl_sample">ข้อมูลตัวอย่าง</p>
+      <div class="card">
+        <div class="field">
+          <label data-i18n="lbl_variety">พันธุ์ทุเรียน</label>
+          <select id="variety" onchange="onVarietyChange()">
+            <option value="หมอนทอง" data-th="หมอนทอง" data-en="Monthong">หมอนทอง</option>
+            <option value="ก้านยาว" data-th="ก้านยาว" data-en="Kan Yao">ก้านยาว</option>
+            <option value="ชะนี" data-th="ชะนี" data-en="Chanee">ชะนี</option>
+            <option value="พวงมณี" data-th="พวงมณี" data-en="Puangmanee">พวงมณี</option>
+            <option value="กระดุมทอง" data-th="กระดุมทอง" data-en="Kradum Thong">กระดุมทอง</option>
+            <option value="อื่นๆ" data-th="อื่นๆ" data-en="Other">อื่นๆ</option>
+          </select>
+          <div id="threshold-chip" class="threshold-chip"></div>
+        </div>
+        <div class="field-row">
+          <div class="field" style="margin-bottom:0;">
+            <label data-i18n="lbl_farm">ชื่อสวน/เจ้าของ</label>
+            <input type="text" id="farm" list="farm-list" placeholder="สวนลุงสมชาย">
+            <datalist id="farm-list"></datalist>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label data-i18n="lbl_plot">แปลง</label>
+            <input type="text" id="plot" list="plot-list" placeholder="แปลง 2">
+            <datalist id="plot-list"></datalist>
+          </div>
+        </div>
+        <div class="field-row" style="margin-top:14px;">
+          <div class="field" style="margin-bottom:0;">
+            <label data-i18n="lbl_daa">DAA (วัน)</label>
+            <input type="number" id="daa" placeholder="120">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label data-i18n="lbl_gps">พิกัด GPS</label>
+            <div class="gps-row">
+              <input type="text" id="gps" placeholder="13.7563, 100.5018">
+              <button class="icon-btn" onclick="getGPS()" title="ระบุตำแหน่งอัตโนมัติ">📍</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="section-label" data-i18n="lbl_method">วิธีอบแห้ง</p>
+      <div class="card">
+        <div class="seg">
+          <button id="m-oven" class="active" onclick="setMethod('oven')">
+            <span>♨️</span><span data-i18n="method_oven">ตู้อบลมร้อน</span>
+          </button>
+          <button id="m-mw" onclick="setMethod('mw')">
+            <span>🔥</span><span data-i18n="method_mw">ไมโครเวฟ</span>
+          </button>
+        </div>
+        <p class="hint" id="method-hint" data-i18n="hint_oven">อบต่อเนื่องที่ 60°C นาน 72 ชั่วโมง ชั่งน้ำหนักครั้งเดียวหลังอบเสร็จ</p>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:0 2px 6px;">
+        <p class="section-label" style="margin:0;" data-i18n="lbl_samples">ตัวอย่างทุเรียนในรอบนี้</p>
+        <span class="threshold-chip" id="sample-count-chip" style="margin-top:0;"></span>
+      </div>
+      <div id="samples-list"></div>
+      <button class="add-round" style="margin-bottom:14px;" onclick="addSample()" data-i18n="btn_add_sample">+ เพิ่มลูกทุเรียน</button>
+
+      <button class="primary-btn" onclick="calculate()">
+        <span>⚖</span><span data-i18n="btn_calc">คำนวณผล</span>
+      </button>
+
+      <!-- RESULT -->
+      <div id="result-card" class="card hidden" style="margin-top:14px;">
+        <div class="gauge-wrap">
+          <svg id="gauge-svg" width="220" height="130" viewBox="0 0 220 130"></svg>
+          <div class="gauge-val mono" id="gauge-val">0.0%</div>
+          <div class="gauge-sub" id="gauge-sub"></div>
+        </div>
+        <div style="text-align:center;">
+          <div id="status-badge" class="status-badge"></div>
+        </div>
+        <div id="sample-breakdown" style="margin-top:14px;"></div>
+        <p class="disclaimer" data-i18n="disclaimer">ผลลัพธ์นี้เป็นเครื่องมือช่วยตัดสินใจเบื้องต้น ไม่ใช่ผลตรวจรับรองทางการจากหน่วยงานรัฐ</p>
+        <button class="primary-btn" style="margin-top:14px;background:var(--forest);color:#fff;" onclick="saveRecord()">
+          <span>💾</span><span data-i18n="btn_save">บันทึกผลลัพธ์</span>
+        </button>
+        <button class="ghost-btn" style="margin-top:8px;" onclick="downloadPDF(lastResult)">
+          <span>📄</span> <span data-i18n="btn_print">ดาวน์โหลดรายงาน PDF</span>
+        </button>
+        <button class="ghost-btn" style="margin-top:8px;" onclick="downloadExcel(lastResult)">
+          <span>📊</span> <span data-i18n="btn_excel">ดาวน์โหลด Excel</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- HISTORY VIEW -->
+    <div id="view-history" class="hidden">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:2px;">
+        <select id="year-filter" onchange="setYearFilter(this.value)" style="width:auto;flex-shrink:0;font-size:12.5px;height:34px;padding:0 8px;"></select>
+        <div class="filter-row" id="filter-row" style="margin-bottom:0;flex:1;"></div>
+      </div>
+      <button class="ghost-btn" style="margin:12px 0 4px;" onclick="downloadAllExcel()">
+        <span>📊</span> <span data-i18n="btn_excel_all">ดาวน์โหลดทั้งหมดเป็น Excel</span>
+      </button>
+      <div id="history-list" style="margin-top:10px;"></div>
+    </div>
+
+  </main>
+</div>
+
+<div id="print-area"></div>
+<div id="pdf-capture" style="position:fixed;left:-10000px;top:0;width:794px;background:#fff;"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ---------- i18n ---------- */
+const dict = {
+  app_name:{th:'ทุ.แห้ง',en:'DurianDMC'},
+  app_sub:{th:'เครื่องคำนวณน้ำหนักแห้งทุเรียน',en:'Dry matter calculator'},
+  tab_record:{th:'บันทึกผล',en:'Record'},
+  tab_history:{th:'ประวัติ',en:'History'},
+  lbl_sample:{th:'ข้อมูลตัวอย่าง',en:'Sample info'},
+  lbl_variety:{th:'พันธุ์ทุเรียน',en:'Variety'},
+  lbl_farm:{th:'ชื่อสวน/เจ้าของ',en:'Farm / owner'},
+  lbl_plot:{th:'แปลง',en:'Plot'},
+  lbl_daa:{th:'DAA (วัน)',en:'DAA (days)'},
+  lbl_gps:{th:'พิกัด GPS',en:'GPS location'},
+  lbl_method:{th:'วิธีอบแห้ง',en:'Drying method'},
+  method_mw:{th:'ไมโครเวฟ',en:'Microwave'},
+  method_oven:{th:'ตู้อบลมร้อน',en:'Hot air oven'},
+  hint_mw:{th:'อบครั้งละ 2–3 นาที ทำซ้ำ 6–8 รอบ ชั่งน้ำหนักหลังอบทุกรอบจนน้ำหนักคงที่ (ต่างกันไม่เกิน 0.02 g)',en:'2–3 min per round, repeat 6–8 rounds, weigh after every round until weight is stable (≤0.02 g change)'},
+  hint_oven:{th:'อบต่อเนื่องที่ 60°C นาน 72 ชั่วโมง ชั่งน้ำหนักครั้งเดียวหลังอบเสร็จ',en:'Continuous drying at 60°C for 72 hours, single weighing after drying'},
+  lbl_fresh:{th:'น้ำหนักสด (g)',en:'Fresh weight (g)'},
+  lbl_fruit_weight:{th:'น้ำหนักผลทั้งลูก (kg)',en:'Whole fruit weight (kg)'},
+  lbl_dry:{th:'น้ำหนักแห้ง+จาน (g)',en:'Dry weight + plate (g)'},
+  lbl_plate:{th:'น้ำหนักจาน (g)',en:'Plate weight (g)'},
+  hint_plate:{th:'ชั่งน้ำหนักสดแบบ tare บนจานแล้ว (สุทธิ) ส่วนน้ำหนักแห้งจะรวมจานอยู่ ระบบจะหักน้ำหนักจานออกให้อัตโนมัติ',en:'Fresh weight is already tared (net). Dry readings include the plate — the plate weight is subtracted automatically.'},
+  lbl_rounds:{th:'น้ำหนักแห้ง+จาน แต่ละรอบอบ (g)',en:'Dry + plate weight per round (g)'},
+  btn_add_round:{th:'+ เพิ่มรอบอบ',en:'+ Add round'},
+  btn_calc:{th:'คำนวณผล',en:'Calculate'},
+  btn_save:{th:'บันทึกผลลัพธ์',en:'Save result'},
+  disclaimer:{th:'ผลลัพธ์นี้เป็นเครื่องมือช่วยตัดสินใจเบื้องต้น ไม่ใช่ผลตรวจรับรองทางการจากหน่วยงานรัฐ',en:'This is a decision-support estimate, not an official government-certified result.'},
+  no_threshold:{th:'ไม่มีเกณฑ์ทางการ แสดงเฉพาะตัวเลข',en:'No official threshold — number only'},
+  threshold_label:{th:'เกณฑ์ขั้นต่ำ',en:'Min threshold'},
+  pass:{th:'ผ่านเกณฑ์',en:'Pass'},
+  fail:{th:'ไม่ผ่านเกณฑ์',en:'Below threshold'},
+  stable_ok:{th:'น้ำหนักคงที่แล้ว',en:'Weight is stable'},
+  stable_warn:{th:'ยังไม่คงที่ ควรอบต่อ',en:'Not stable yet — keep drying'},
+  empty_hist_title:{th:'ยังไม่มีประวัติการทดสอบ',en:'No test records yet'},
+  empty_hist_sub:{th:'บันทึกผลทดสอบแรกของคุณได้ที่แท็บ "บันทึกผล"',en:'Save your first test from the Record tab'},
+  filter_all:{th:'ทั้งหมด',en:'All'},
+  lbl_samples:{th:'ตัวอย่างทุเรียนในรอบนี้',en:'Fruit samples in this batch'},
+  btn_add_sample:{th:'+ เพิ่มลูกทุเรียน',en:'+ Add fruit sample'},
+  sample_label:{th:'ลูกที่',en:'Fruit'},
+  samples_count:{th:'ลูก',en:'fruits'},
+  avg_label:{th:'ค่าเฉลี่ยจาก',en:'Average of'},
+  breakdown_title:{th:'ผลแต่ละลูก',en:'Per-fruit results'},
+  btn_print:{th:'ดาวน์โหลดรายงาน PDF',en:'Download PDF report'},
+  btn_excel:{th:'ดาวน์โหลด Excel',en:'Download Excel'},
+  btn_excel_all:{th:'ดาวน์โหลดทั้งหมดเป็น Excel',en:'Download all as Excel'},
+  rpt_title:{th:'รายงานผลตรวจน้ำหนักเนื้อแห้งทุเรียน',en:'Durian dry matter test report'},
+  rpt_farm:{th:'สวน/เจ้าของ',en:'Farm / owner'},
+  rpt_plot:{th:'แปลง',en:'Plot'},
+  rpt_variety:{th:'พันธุ์',en:'Variety'},
+  rpt_date:{th:'วันที่ทดสอบ',en:'Test date'},
+  rpt_method:{th:'วิธีอบ',en:'Drying method'},
+  rpt_daa:{th:'DAA',en:'DAA'},
+  rpt_gps:{th:'พิกัด',en:'GPS'},
+  rpt_col_sample:{th:'ลูกที่',en:'Fruit'},
+  rpt_col_fruit:{th:'น้ำหนักผล (kg)',en:'Fruit wt (kg)'},
+  rpt_col_fresh:{th:'น้ำหนักสด (g)',en:'Fresh (g)'},
+  rpt_col_plate:{th:'น้ำหนักจาน (g)',en:'Plate (g)'},
+  rpt_col_net:{th:'น้ำหนักแห้งสุทธิ (g)',en:'Net dry (g)'},
+  rpt_col_pct:{th:'% น้ำหนักแห้ง',en:'Dry matter %'},
+  rpt_avg_row:{th:'ค่าเฉลี่ย',en:'Average'},
+  rpt_threshold:{th:'เกณฑ์ขั้นต่ำ',en:'Min threshold'},
+  rpt_officer:{th:'ผู้บันทึกผล',en:'Recorded by'},
+  rpt_signature:{th:'ลายเซ็น',en:'Signature'},
+  rpt_generated:{th:'พิมพ์เมื่อ',en:'Printed on'},
+  profile_title:{th:'ช่วยแนะนำตัวคร่าว ๆ (ไม่บังคับ)',en:'Tell us a bit about you (optional)'},
+  profile_note:{th:'ใช้เพื่อสรุปภาพรวมจำนวนผู้ใช้งานตามจังหวัดเท่านั้น ไม่ระบุตัวตน ไม่กระทบการใช้งานแอป ข้ามได้ตลอดเวลา',en:'Used only for aggregate visits-by-province statistics. Not identifying, never affects how the app works, and you can skip this.'},
+  profile_province:{th:'จังหวัด',en:'Province'},
+  profile_skip:{th:'ข้ามไปก่อน',en:'Skip'},
+  profile_submit:{th:'บันทึก',en:'Save'}
+};
+let lang = 'th';
+function t(key){ return dict[key] ? dict[key][lang] : key; }
+function setLang(l){
+  lang = l;
+  document.getElementById('lang-th').classList.toggle('active', l==='th');
+  document.getElementById('lang-en').classList.toggle('active', l==='en');
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const k = el.getAttribute('data-i18n');
+    if(dict[k]) el.textContent = dict[k][l];
+  });
+  document.querySelectorAll('#variety option').forEach(o=>{
+    o.textContent = l==='th' ? o.getAttribute('data-th') : o.getAttribute('data-en');
+  });
+  onVarietyChange();
+  renderHistory();
+}
+
+/* ---------- thresholds ---------- */
+const thresholds = {
+  'หมอนทอง':32, 'ก้านยาว':32, 'ชะนี':30, 'พวงมณี':30, 'กระดุมทอง':27, 'อื่นๆ':null
+};
+
+/* ---------- view switching ---------- */
+function showView(v){
+  document.getElementById('view-record').classList.toggle('hidden', v!=='record');
+  document.getElementById('view-history').classList.toggle('hidden', v!=='history');
+  document.getElementById('tab-record').classList.toggle('active', v==='record');
+  document.getElementById('tab-history').classList.toggle('active', v==='history');
+  if(v==='history') renderHistory();
+}
+
+/* ---------- variety / threshold chip ---------- */
+function onVarietyChange(){
+  const v = document.getElementById('variety').value;
+  const th = thresholds[v];
+  const chip = document.getElementById('threshold-chip');
+  if(th){
+    chip.className = 'threshold-chip';
+    chip.textContent = t('threshold_label') + ' ' + th + '%';
+  } else {
+    chip.className = 'threshold-chip none';
+    chip.textContent = t('no_threshold');
+  }
+}
+
+/* ---------- method toggle ---------- */
+let method = 'oven';
+let wmode = 'quick';
+function setMethod(m){
+  method = m;
+  wmode = m==='oven' ? 'quick' : 'precise';
+  document.getElementById('m-mw').classList.toggle('active', m==='mw');
+  document.getElementById('m-oven').classList.toggle('active', m==='oven');
+  document.getElementById('method-hint').textContent = m==='mw' ? t('hint_mw') : t('hint_oven');
+  renderSamples();
+}
+
+/* ---------- fruit samples (one test round = several fruits) ---------- */
+let samples = [];
+let sampleSeq = 0;
+function newSample(fresh, plate, dryQuick, rounds, fruitWeight){
+  sampleSeq++;
+  return { id:'s'+sampleSeq, fresh: fresh, plate: plate, dryQuick: dryQuick, rounds: rounds, fruitWeight: fruitWeight||0 };
+}
+function addSample(){
+  samples.push(newSample(20, 5.0, 11.6, [11.9, 11.6], 0));
+  renderSamples();
+}
+function removeSample(id){
+  if(samples.length<=1) return;
+  samples = samples.filter(s=>s.id!==id);
+  renderSamples();
+}
+function updateSampleField(id, field, value){
+  const s = samples.find(x=>x.id===id);
+  if(!s) return;
+  s[field] = parseFloat(value) || 0;
+}
+function addRound(id){
+  const s = samples.find(x=>x.id===id);
+  if(!s) return;
+  s.rounds.push(null);
+  renderSamples();
+}
+function removeRound(id, idx){
+  const s = samples.find(x=>x.id===id);
+  if(!s) return;
+  s.rounds.splice(idx,1);
+  renderSamples();
+}
+function updateRound(id, idx, value){
+  const s = samples.find(x=>x.id===id);
+  if(!s) return;
+  const v = parseFloat(value);
+  s.rounds[idx] = isNaN(v) ? null : v;
+  checkStableInline(id);
+}
+function checkStableInline(id){
+  const s = samples.find(x=>x.id===id);
+  const tagEl = document.getElementById('stable-'+id);
+  if(!s || !tagEl) return;
+  const vals = s.rounds.filter(v=>v!==null && v!==undefined && !isNaN(v));
+  if(vals.length < 2){ tagEl.textContent=''; tagEl.className='stable-tag'; return; }
+  const diff = Math.abs(vals[vals.length-1] - vals[vals.length-2]);
+  if(diff <= 0.02){
+    tagEl.textContent = '✓ ' + t('stable_ok');
+    tagEl.className = 'stable-tag ok';
+  } else {
+    tagEl.textContent = '⚠ ' + t('stable_warn') + ' (Δ' + diff.toFixed(2) + 'g)';
+    tagEl.className = 'stable-tag warn';
+  }
+}
+function sampleDry(s){
+  const plate = s.plate || 0;
+  let gross;
+  if(wmode==='quick'){
+    gross = s.dryQuick || 0;
+  } else {
+    const vals = s.rounds.filter(v=>v!==null && v!==undefined && !isNaN(v));
+    gross = vals.length ? vals[vals.length-1] : 0;
+  }
+  return Math.max(0, gross - plate);
+}
+function renderSamples(){
+  const list = document.getElementById('samples-list');
+  list.innerHTML = samples.map((s, idx)=>{
+    const fruitWeightRow = `
+      <div class="field" style="margin-bottom:10px;">
+        <label>${t('lbl_fruit_weight')}</label>
+        <input type="number" step="0.01" value="${s.fruitWeight}" placeholder="3.20" oninput="updateSampleField('${s.id}','fruitWeight',this.value)">
+      </div>`;
+    const plateFreshRow = `
+      <div class="field-row" style="margin-bottom:10px;">
+        <div class="field" style="margin-bottom:0;">
+          <label>${t('lbl_fresh')}</label>
+          <input type="number" step="0.01" value="${s.fresh}" oninput="updateSampleField('${s.id}','fresh',this.value)">
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>${t('lbl_plate')}</label>
+          <input type="number" step="0.01" value="${s.plate}" oninput="updateSampleField('${s.id}','plate',this.value)">
+        </div>
+      </div>`;
+    let body;
+    if(wmode==='quick'){
+      body = `
+        ${fruitWeightRow}
+        ${plateFreshRow}
+        <div class="field" style="margin-bottom:0;">
+          <label>${t('lbl_dry')}</label>
+          <input type="number" step="0.01" value="${s.dryQuick}" oninput="updateSampleField('${s.id}','dryQuick',this.value)">
+        </div>`;
+    } else {
+      const rows = s.rounds.map((r,i)=>`
+        <div class="log-row">
+          <div class="rnum">${i+1}</div>
+          <input type="number" step="0.01" value="${(r===null||r===undefined)?'':r}" placeholder="11.60" oninput="updateRound('${s.id}',${i},this.value)">
+          <button class="del" onclick="removeRound('${s.id}',${i})">×</button>
+        </div>`).join('');
+      body = `
+        ${fruitWeightRow}
+        ${plateFreshRow}
+        <label style="display:block;font-size:12.5px;color:var(--text-secondary);margin-bottom:6px;font-weight:500;">${t('lbl_rounds')}</label>
+        ${rows}
+        <button class="add-round" onclick="addRound('${s.id}')">${t('btn_add_round')}</button>
+        <p id="stable-${s.id}" class="stable-tag"></p>`;
+    }
+    return `
+      <div class="sample-card">
+        <div class="sample-head">
+          <div class="num"><span class="dot">${idx+1}</span>${t('sample_label')} ${idx+1}</div>
+          ${samples.length>1 ? `<button class="sample-remove" onclick="removeSample('${s.id}')" aria-label="remove">×</button>` : ''}
+        </div>
+        ${body}
+        <p class="hint" style="margin-top:8px;">${t('hint_plate')}</p>
+      </div>`;
+  }).join('');
+  document.getElementById('sample-count-chip').textContent = samples.length + ' ' + t('samples_count');
+  if(wmode==='precise'){ samples.forEach(s=>checkStableInline(s.id)); }
+}
+
+/* ---------- GPS ---------- */
+function getGPS(){
+  if(!navigator.geolocation){ return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => { document.getElementById('gps').value = pos.coords.latitude.toFixed(4)+', '+pos.coords.longitude.toFixed(4); },
+    err => { /* silent fail, user can type manually */ }
+  );
+}
+
+/* ---------- gauge (thorn-tick radial) ---------- */
+function drawGauge(pct, threshold, status){
+  const svg = document.getElementById('gauge-svg');
+  const cx=110, cy=115, r=88;
+  const clamped = Math.max(0, Math.min(45, pct));
+  const valAngle = 180 - (clamped/45)*180;
+  const color = status==='pass' ? '#3F8F5C' : status==='fail' ? '#C24A3D' : '#5C6B57';
+
+  let ticks = '';
+  const nTicks = 28;
+  for(let i=0;i<=nTicks;i++){
+    const a = 180 - (i/nTicks)*180;
+    const rad = a*Math.PI/180;
+    const x1 = cx + (r-2)*Math.cos(rad), y1 = cy - (r-2)*Math.sin(rad);
+    const x2 = cx + (r+8)*Math.cos(rad), y2 = cy - (r+8)*Math.sin(rad);
+    const isThresholdTick = threshold!==null && Math.abs((i/nTicks)*45 - threshold) < 0.85;
+    ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${isThresholdTick? '#B87C22':'#D8DECB'}" stroke-width="${isThresholdTick?3:1.5}"/>`;
+  }
+  const rad = valAngle*Math.PI/180;
+  const needleX = cx + r*0.72*Math.cos(rad), needleY = cy - r*0.72*Math.sin(rad);
+
+  svg.innerHTML = `
+    <path d="M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}" fill="none" stroke="#EFF1E6" stroke-width="14" stroke-linecap="round"/>
+    <path d="M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx + r*Math.cos(rad*0+Math.PI-rad)} ${cy}" fill="none"/>
+    <path d="M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${needleX + (r-needleX+cx)*0} ${cy}" fill="none"/>
+    ${ticks}
+    <path d="M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r*Math.cos(rad)} ${cy-r*Math.sin(rad)}" fill="none" stroke="${color}" stroke-width="14" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="5" fill="${color}"/>
+    <line x1="${cx}" y1="${cy}" x2="${needleX}" y2="${needleY}" stroke="${color}" stroke-width="3" stroke-linecap="round"/>
+  `;
+}
+
+/* ---------- calculate (averages across all fruit samples in the batch) ---------- */
+let lastResult = null;
+function calculate(){
+  const variety = document.getElementById('variety').value;
+  const threshold = thresholds[variety];
+
+  const perSample = samples.map((s, idx)=>{
+    const dry = sampleDry(s);
+    const pct = s.fresh>0 ? (dry/s.fresh*100) : 0;
+    return { seq: idx+1, fruitWeight: s.fruitWeight||0, fresh: s.fresh, plate: s.plate||0, dry, pct: Math.round(pct*10)/10 };
+  });
+  const avgPct = perSample.length ? perSample.reduce((a,b)=>a+b.pct,0)/perSample.length : 0;
+  const failingSamples = threshold===null ? [] : perSample.filter(p=>p.pct < threshold);
+  const overallStatus = threshold===null ? 'none' : (failingSamples.length===0 ? 'pass' : 'fail');
+
+  document.getElementById('result-card').classList.remove('hidden');
+  document.getElementById('gauge-val').textContent = avgPct.toFixed(1)+'%';
+  document.getElementById('gauge-sub').textContent = variety + ' · ' + t('avg_label') + ' ' + perSample.length + ' ' + t('samples_count');
+  drawGauge(avgPct, threshold, overallStatus);
+
+  const badge = document.getElementById('status-badge');
+  if(overallStatus==='none'){
+    badge.className = 'status-badge neutral';
+    badge.textContent = t('no_threshold');
+  } else if(overallStatus==='pass'){
+    badge.className = 'status-badge pass';
+    badge.textContent = '✓ '+t('pass')+' ('+threshold+'%)';
+  } else {
+    badge.className = 'status-badge fail';
+    const failNums = failingSamples.map(p=>p.seq).join(', ');
+    badge.textContent = '✕ '+t('fail')+' ('+threshold+'%) — '+t('sample_label')+' '+failNums;
+  }
+
+  const breakdown = document.getElementById('sample-breakdown');
+  breakdown.innerHTML = `<p style="font-size:12px;color:var(--text-secondary);font-weight:500;margin:0 0 8px;">${t('breakdown_title')}</p>` +
+    perSample.map(p=>{
+      const st = threshold===null ? '' : (p.pct>=threshold ? 'pass':'fail');
+      return `<div class="breakdown-chip"><span class="n">${t('sample_label')} ${p.seq}${p.fruitWeight ? ' · '+p.fruitWeight.toFixed(2)+' kg' : ''}</span><span class="p ${st}">${p.pct.toFixed(1)}%</span></div>`;
+    }).join('');
+
+  lastResult = {
+    id: Date.now().toString(36),
+    variety, farm: document.getElementById('farm').value,
+    plot: document.getElementById('plot').value,
+    daa: document.getElementById('daa').value,
+    gps: document.getElementById('gps').value,
+    method, wmode,
+    samples: perSample,
+    sampleCount: perSample.length,
+    pct: Math.round(avgPct*10)/10,
+    threshold, status: overallStatus,
+    date: new Date().toISOString()
+  };
+  document.getElementById('result-card').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+/* ---------- Supabase config ----------
+   1. Create a project at https://supabase.com
+   2. In the SQL editor, run the schema at the bottom of this file's comments (or see the setup guide you were given).
+   3. In Authentication > Providers, enable "Anonymous sign-ins".
+   4. Paste your project URL and anon public key below. Both are safe to expose in client code —
+      row-level security (RLS) on the table is what actually protects the data.
+------------------------------------------- */
+const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+let sb = null;
+let currentUserId = null;
+let supabaseReady = false;
+
+async function initSupabase(){
+  if(SUPABASE_URL.includes('YOUR_') || SUPABASE_ANON_KEY.includes('YOUR_')){
+    showConfigBanner();
+    return;
+  }
+  if(!window.supabase){ showConfigBanner('sdk'); return; }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { data: { session } } = await sb.auth.getSession();
+  if(session && session.user){
+    currentUserId = session.user.id;
+  } else {
+    const { data, error } = await sb.auth.signInAnonymously();
+    if(error){ showConfigBanner('auth'); return; }
+    currentUserId = data.user.id;
+  }
+  supabaseReady = true;
+  logVisit();
+  checkProfilePrompt();
+}
+
+/* usage analytics: one row per app open — query this table directly
+   in the Supabase SQL editor for visit counts, unique users, activity by date */
+async function logVisit(){
+  try{
+    await sb.from('app_sessions').insert({
+      user_id: currentUserId,
+      user_agent: navigator.userAgent,
+      lang: lang
+    });
+  }catch(e){ /* non-critical — never block app usage on this */ }
+}
+
+/* optional, skippable one-time profile (province / affiliation) —
+   never required to use the calculator */
+async function checkProfilePrompt(){
+  try{
+    const { data } = await sb.from('user_profiles').select('user_id').eq('user_id', currentUserId).maybeSingle();
+    if(!data) showProfilePrompt();
+  }catch(e){ /* table not created yet — skip silently */ }
+}
+function showProfilePrompt(){
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = 'profile-prompt';
+  card.style.cssText = 'border-color:var(--gold);margin-bottom:14px;';
+  const provinces = ['จันทบุรี','ระยอง','ตราด','ชุมพร','นครศรีธรรมราช','สุราษฎร์ธานี','ยะลา','นราธิวาส','ปัตตานี','เชียงใหม่','เชียงราย','อื่นๆ'];
+  card.innerHTML = `
+    <p style="font-weight:500;font-size:14px;margin:0 0 4px;">${t('profile_title')}</p>
+    <p style="font-size:12px;color:var(--text-secondary);margin:0 0 12px;line-height:1.5;">${t('profile_note')}</p>
+    <div class="field" style="margin-bottom:0;">
+      <label>${t('profile_province')}</label>
+      <select id="profile-province">
+        <option value="">—</option>
+        ${provinces.map(p=>`<option value="${p}">${p}</option>`).join('')}
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="ghost-btn" onclick="dismissProfilePrompt(true)">${t('profile_skip')}</button>
+      <button class="primary-btn" style="background:var(--forest);color:#fff;" onclick="submitProfile()">${t('profile_submit')}</button>
+    </div>`;
+  document.getElementById('view-record').prepend(card);
+}
+async function submitProfile(){
+  const province = document.getElementById('profile-province').value;
+  try{
+    await sb.from('user_profiles').upsert({ user_id: currentUserId, province: province || null });
+  }catch(e){}
+  dismissProfilePrompt(false);
+}
+async function dismissProfilePrompt(skip){
+  if(skip){
+    try{ await sb.from('user_profiles').upsert({ user_id: currentUserId, province: null }); }catch(e){}
+  }
+  const el = document.getElementById('profile-prompt');
+  if(el) el.remove();
+}
+
+function showConfigBanner(kind){
+  const msg = document.createElement('div');
+  msg.style.cssText = 'background:#FBEBE8;color:#7A2A22;font-size:12.5px;padding:10px 14px;margin:0 0 12px;border-radius:10px;line-height:1.5;';
+  msg.textContent = kind==='auth'
+    ? (lang==='th' ? 'เชื่อมต่อ Supabase ไม่สำเร็จ ตรวจสอบว่าเปิดใช้งาน Anonymous sign-ins ในโปรเจกต์แล้ว' : 'Could not connect to Supabase. Check that Anonymous sign-ins is enabled on your project.')
+    : (lang==='th' ? 'ยังไม่ได้ตั้งค่า Supabase URL / anon key ในไฟล์นี้ ข้อมูลจะยังใช้งานไม่ได้จนกว่าจะกรอกค่าในส่วนหัวของโค้ด' : "Supabase URL / anon key are not set in this file yet. Data won't save until you fill them in near the top of the script.");
+  document.querySelector('main').prepend(msg);
+}
+
+/* ---------- persistence (Supabase, row-level-security scoped per anonymous device user) ---------- */
+async function loadAllRecords(){
+  if(!supabaseReady) return [];
+  try{
+    const { data, error } = await sb.from('durian_tests').select('*').order('test_date', {ascending:false});
+    if(error) return [];
+    return data.map(row=>({
+      id: row.id, variety: row.variety, farm: row.farm, plot: row.plot, daa: row.daa, gps: row.gps,
+      method: row.method, wmode: row.wmode, samples: row.samples, sampleCount: row.sample_count,
+      pct: row.pct, threshold: row.threshold, status: row.status, date: row.test_date
+    }));
+  }catch(e){ return []; }
+}
+async function saveRecord(){
+  if(!lastResult || !supabaseReady) return;
+  const r = lastResult;
+  try{
+    await sb.from('durian_tests').insert({
+      user_id: currentUserId,
+      variety: r.variety, farm: r.farm, plot: r.plot, daa: r.daa, gps: r.gps,
+      method: r.method, wmode: r.wmode, samples: r.samples, sample_count: r.sampleCount,
+      pct: r.pct, threshold: r.threshold, status: r.status, test_date: r.date
+    });
+  }catch(e){ /* insert failed — record stays visible on screen so nothing is lost */ }
+  document.getElementById('result-card').classList.add('hidden');
+  showView('history');
+}
+
+/* ---------- report content (shared by PDF export and print fallback) ---------- */
+function buildReportHTML(r){
+  const d = new Date(r.date);
+  const dateStr = d.toLocaleDateString(lang==='th'?'th-TH':'en-GB', {day:'numeric',month:'long',year:'numeric'});
+  const now = new Date().toLocaleString(lang==='th'?'th-TH':'en-GB');
+  const failNums = (r.status==='fail' && r.samples) ? r.samples.filter(s=>r.threshold!==null && s.pct < r.threshold).map(s=>s.seq).join(', ') : '';
+  const statusText = r.status==='pass' ? '✓ '+t('pass') : r.status==='fail' ? '✕ '+t('fail')+(failNums?' — '+t('sample_label')+' '+failNums:'') : t('no_threshold');
+  const rows = (r.samples||[]).map(s=>`
+    <tr>
+      <td>${t('sample_label')} ${s.seq}</td>
+      <td>${(s.fruitWeight||0).toFixed(2)}</td>
+      <td>${(s.fresh||0).toFixed(2)}</td>
+      <td>${(s.plate||0).toFixed(2)}</td>
+      <td>${(s.dry||0).toFixed(2)}</td>
+      <td>${s.pct.toFixed(1)}%</td>
+    </tr>`).join('');
+
+  return `
+    <div class="rpt">
+      <h2>${t('rpt_title')}</h2>
+      <p class="rpt-sub">${t('app_name')} · ${t('app_sub')}</p>
+      <div class="rpt-meta">
+        <div><span>${t('rpt_farm')}: </span>${r.farm || '—'}</div>
+        <div><span>${t('rpt_plot')}: </span>${r.plot || '—'}</div>
+        <div><span>${t('rpt_variety')}: </span>${r.variety}</div>
+        <div><span>${t('rpt_date')}: </span>${dateStr}</div>
+        <div><span>${t('rpt_method')}: </span>${r.method==='mw' ? t('method_mw') : t('method_oven')}</div>
+        <div><span>${t('rpt_daa')}: </span>${r.daa || '—'}</div>
+        <div><span>${t('rpt_gps')}: </span>${r.gps || '—'}</div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>${t('rpt_col_sample')}</th><th>${t('rpt_col_fruit')}</th><th>${t('rpt_col_fresh')}</th><th>${t('rpt_col_plate')}</th><th>${t('rpt_col_net')}</th><th>${t('rpt_col_pct')}</th>
+        </tr></thead>
+        <tbody>${rows}
+          <tr style="font-weight:600;background:#f7f7f2;">
+            <td colspan="5">${t('rpt_avg_row')} (${(r.samples||[]).length} ${t('samples_count')})</td>
+            <td>${r.pct.toFixed(1)}%</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="rpt-result">${r.threshold!==null && r.threshold!==undefined ? t('rpt_threshold')+' '+r.threshold+'% — '+statusText : statusText}</p>
+      <p style="font-size:11.5px;color:#555;">${t('disclaimer')}</p>
+      <div class="rpt-sign">
+        <div><div class="line">${t('rpt_officer')}</div></div>
+        <div><div class="line">${t('rpt_signature')}</div></div>
+      </div>
+      <p class="rpt-foot">${t('rpt_generated')}: ${now}</p>
+    </div>`;
+}
+
+function printFallback(r){
+  const area = document.getElementById('print-area');
+  area.innerHTML = buildReportHTML(r);
+  setTimeout(()=>window.print(), 80);
+}
+
+/* ---------- PDF export (renders the report to canvas so Thai text is preserved, then packs it into a PDF) ---------- */
+async function downloadPDF(r){
+  if(!r) return;
+  if(!window.html2canvas || !window.jspdf){ printFallback(r); return; }
+  const capture = document.getElementById('pdf-capture');
+  capture.innerHTML = `<div style="padding:32px;">${buildReportHTML(r)}</div>`;
+  await new Promise(res=>setTimeout(res, 80));
+  try{
+    const canvas = await html2canvas(capture, {scale:2, backgroundColor:'#ffffff'});
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    const pageWidth = 210, pageHeight = 297;
+    const imgWidth = pageWidth;
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    while(heightLeft > 0){
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    const datePart = new Date(r.date).toISOString().slice(0,10);
+    const farmPart = (r.farm || 'report').replace(/[^a-zA-Z0-9ก-๙]+/g,'_');
+    pdf.save(`durian-dmc-${farmPart}-${datePart}.pdf`);
+  }catch(e){
+    printFallback(r);
+  }
+  capture.innerHTML = '';
+}
+
+/* ---------- Excel export ---------- */
+function excelHeaderRows(r){
+  const d = new Date(r.date);
+  const dateStr = d.toLocaleDateString('th-TH', {day:'numeric',month:'long',year:'numeric'});
+  return [
+    [t('rpt_title')],
+    [],
+    [t('rpt_farm'), r.farm || ''],
+    [t('rpt_plot'), r.plot || ''],
+    [t('rpt_variety'), r.variety],
+    [t('rpt_date'), dateStr],
+    [t('rpt_method'), r.method==='mw' ? t('method_mw') : t('method_oven')],
+    [t('rpt_daa'), r.daa || ''],
+    [t('rpt_gps'), r.gps || ''],
+    [t('rpt_threshold'), r.threshold!==null && r.threshold!==undefined ? r.threshold+'%' : t('no_threshold')],
+    [t('rpt_avg_row'), r.pct+'%'],
+    [t('breakdown_title').replace('ผลแต่ละลูก','ผลรวม'), r.status==='pass' ? t('pass') : r.status==='fail' ? t('fail') : t('no_threshold')],
+    []
+  ];
+}
+function sampleTableRows(samples){
+  const header = [t('rpt_col_sample'), t('rpt_col_fruit'), t('rpt_col_fresh'), t('rpt_col_plate'), t('rpt_col_net'), t('rpt_col_pct')];
+  const rows = (samples||[]).map(s=>[
+    t('sample_label')+' '+s.seq, s.fruitWeight||0, s.fresh||0, s.plate||0, s.dry||0, s.pct
+  ]);
+  return [header, ...rows];
+}
+function downloadExcel(r){
+  if(!r) return;
+  const rows = [...excelHeaderRows(r), ...sampleTableRows(r.samples)];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:16},{wch:14},{wch:14},{wch:14},{wch:16},{wch:10}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Report');
+  const datePart = new Date(r.date).toISOString().slice(0,10);
+  const farmPart = (r.farm || 'report').replace(/[^a-zA-Z0-9ก-๙]+/g,'_');
+  XLSX.writeFile(wb, `durian-dmc-${farmPart}-${datePart}.xlsx`);
+}
+
+/* bulk export — every currently loaded history record, one row per fruit sample
+   (long format: best for statistics/pivot tables) plus a per-batch summary sheet */
+async function downloadAllExcel(){
+  const all = await loadAllRecords();
+  if(all.length===0) return;
+
+  const sampleHeader = [
+    t('rpt_date'), t('rpt_farm'), t('rpt_plot'), t('rpt_variety'), t('rpt_daa'), t('rpt_gps'),
+    t('rpt_method'), t('rpt_col_sample'), t('rpt_col_fruit'), t('rpt_col_fresh'), t('rpt_col_plate'), t('rpt_col_net'), t('rpt_col_pct'), t('rpt_threshold')
+  ];
+  const sampleRows = [];
+  all.forEach(r=>{
+    const dateStr = new Date(r.date).toLocaleDateString('th-TH', {day:'numeric',month:'short',year:'numeric'});
+    (r.samples||[]).forEach(s=>{
+      sampleRows.push([
+        dateStr, r.farm||'', r.plot||'', r.variety, r.daa||'', r.gps||'',
+        r.method==='mw' ? t('method_mw') : t('method_oven'),
+        s.seq, s.fruitWeight||0, s.fresh||0, s.plate||0, s.dry||0, s.pct,
+        r.threshold!==null && r.threshold!==undefined ? r.threshold : ''
+      ]);
+    });
+  });
+  const wsSamples = XLSX.utils.aoa_to_sheet([sampleHeader, ...sampleRows]);
+
+  const batchHeader = [t('rpt_date'), t('rpt_farm'), t('rpt_plot'), t('rpt_variety'), t('rpt_method'), t('samples_count'), t('rpt_avg_row'), t('rpt_threshold'), t('pass')+'/'+t('fail')];
+  const batchRows = all.map(r=>{
+    const dateStr = new Date(r.date).toLocaleDateString('th-TH', {day:'numeric',month:'short',year:'numeric'});
+    return [
+      dateStr, r.farm||'', r.plot||'', r.variety,
+      r.method==='mw' ? t('method_mw') : t('method_oven'),
+      r.sampleCount||1, r.pct,
+      r.threshold!==null && r.threshold!==undefined ? r.threshold : '',
+      r.status==='pass' ? t('pass') : r.status==='fail' ? t('fail') : t('no_threshold')
+    ];
+  });
+  const wsBatches = XLSX.utils.aoa_to_sheet([batchHeader, ...batchRows]);
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, wsBatches, lang==='th'?'สรุปรายรอบ':'Batches');
+  XLSX.utils.book_append_sheet(wb, wsSamples, lang==='th'?'ข้อมูลรายลูก':'Samples');
+  XLSX.writeFile(wb, `durian-dmc-all-records-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+/* ---------- history ---------- */
+let activeFilter = 'all';
+let activeYear = 'all';
+let historyCache = {};
+async function renderHistory(){
+  const all = await loadAllRecords();
+  historyCache = {};
+  all.forEach(r=>{ historyCache[r.id] = r; });
+  populateSuggestions(all);
+
+  const varieties = ['all', ...new Set(all.map(r=>r.variety))];
+  const filterRow = document.getElementById('filter-row');
+  filterRow.innerHTML = varieties.map(v=>
+    `<button class="filter-chip ${activeFilter===v?'active':''}" onclick="setFilter('${v.replace(/'/g,"\\'")}')">${v==='all'?t('filter_all'):v}</button>`
+  ).join('');
+
+  const years = [...new Set(all.map(r=>new Date(r.date).getFullYear()))].sort((a,b)=>b-a);
+  const yearSelect = document.getElementById('year-filter');
+  const yearLabel = y => lang==='th' ? (y+543) : y;
+  yearSelect.innerHTML = `<option value="all">${t('filter_all')}</option>` +
+    years.map(y=>`<option value="${y}" ${activeYear==String(y)?'selected':''}>${yearLabel(y)}</option>`).join('');
+  yearSelect.value = activeYear;
+
+  const list = document.getElementById('history-list');
+  const filtered = all.filter(r=>
+    (activeFilter==='all' || r.variety===activeFilter) &&
+    (activeYear==='all' || new Date(r.date).getFullYear()===Number(activeYear))
+  );
+
+  if(filtered.length===0){
+    list.innerHTML = `<div class="empty"><div class="em-mark">🌱</div><h3 style="margin:0 0 4px;">${t('empty_hist_title')}</h3><p style="margin:0;font-size:13px;">${t('empty_hist_sub')}</p></div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(r=>{
+    const color = r.status==='pass' ? {bg:'#E7F3EA',fg:'#3F8F5C'} : r.status==='fail' ? {bg:'#FBEBE8',fg:'#C24A3D'} : {bg:'#EFEFEA',fg:'#5C6B57'};
+    const d = new Date(r.date);
+    const dateStr = d.toLocaleDateString(lang==='th'?'th-TH':'en-GB', {day:'numeric',month:'short',year:'numeric'});
+    const place = [r.farm, r.plot].filter(Boolean).join(' / ');
+    return `<div class="hist-card">
+      <div class="hist-pct" style="background:${color.bg};color:${color.fg};">${r.pct.toFixed(1)}%</div>
+      <div class="hist-body">
+        <p class="v">${r.variety}${place ? ' · '+place : ''}</p>
+        <p class="m">${dateStr} · ${r.method==='mw' ? t('method_mw') : t('method_oven')} · ${r.sampleCount||1} ${t('samples_count')}</p>
+      </div>
+      <button class="hist-del" onclick="downloadPDF(historyCache['${r.id}'])" title="download PDF">📄</button>
+      <button class="hist-del" onclick="downloadExcel(historyCache['${r.id}'])" title="download Excel">📊</button>
+      <button class="hist-del" onclick="deleteRecord('${r.id}')">🗑</button>
+    </div>`;
+  }).join('');
+}
+function populateSuggestions(all){
+  const farms = [...new Set(all.map(r=>r.farm).filter(Boolean))];
+  const plots = [...new Set(all.map(r=>r.plot).filter(Boolean))];
+  const farmList = document.getElementById('farm-list');
+  const plotList = document.getElementById('plot-list');
+  if(farmList) farmList.innerHTML = farms.map(f=>`<option value="${f.replace(/"/g,'')}">`).join('');
+  if(plotList) plotList.innerHTML = plots.map(p=>`<option value="${p.replace(/"/g,'')}">`).join('');
+}
+function setFilter(v){ activeFilter = v; renderHistory(); }
+function setYearFilter(v){ activeYear = v; renderHistory(); }
+async function deleteRecord(id){
+  if(!supabaseReady) return;
+  try{ await sb.from('durian_tests').delete().eq('id', id); }catch(e){}
+  renderHistory();
+}
+
+/* ---------- init ---------- */
+onVarietyChange();
+samples = [
+  newSample(20, 4.8, 11.5, [11.9, 11.5], 3.2),
+  newSample(19.5, 5.1, 11.4, [11.7, 11.4], 2.9),
+  newSample(20.5, 4.9, 11.5, [11.8, 11.5], 3.4)
+];
+renderSamples();
+drawGauge(0, null);
+initSupabase().then(()=>renderHistory());
+</script>
+</body>
+</html>
