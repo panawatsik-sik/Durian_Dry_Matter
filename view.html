@@ -35,6 +35,7 @@ th{background:#F0F2E8;font-weight:600;}
 .status-badge.fail{background:var(--danger-bg);color:var(--danger);}
 .status-badge.none{background:#EFEFEA;color:var(--text-secondary);}
 .disclaimer{font-size:11.5px;color:var(--text-muted);text-align:center;line-height:1.5;margin-top:14px;}
+.rounds-row td{background:#F7F8F2;font-size:11px;color:var(--text-secondary);padding:5px 8px;border-top:none;}
 .error-box{text-align:center;padding:3rem 1rem;color:var(--text-secondary);}
 .section-label{font-size:12px;color:var(--text-secondary);font-weight:500;margin:0 0 6px 2px;text-transform:uppercase;letter-spacing:0.5px;}
 </style>
@@ -82,7 +83,8 @@ function render(){
       <td>${(s[3]||0).toFixed(2)}</td>
       <td>${(s[4]||0).toFixed(2)}</td>
       <td>${(s[5]||0).toFixed(1)}%</td>
-    </tr>`).join('');
+    </tr>
+    ${(s[6] && s[6].length) ? `<tr class="rounds-row"><td colspan="6">น้ำหนักแต่ละรอบชั่ง (g): ${s[6].map((v,i)=>'รอบ '+(i+1)+' = '+v.toFixed(2)).join(' · ')}</td></tr>` : ''}`).join('');
 
   main.innerHTML = `
     <div class="card">
@@ -111,6 +113,7 @@ function render(){
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">น้ำหนักแห้งสุทธิ = น้ำหนักรอบสุดท้าย − น้ำหนักจาน (รอบสุดท้ายคือรอบที่น้ำหนักคงที่แล้ว)</p>
     </div>
     <p class="disclaimer">ข้อมูลนี้ถอดรหัสมาจาก QR code โดยตรง ไม่ได้ดึงจากฐานข้อมูลกลาง เป็นเครื่องมือช่วยตัดสินใจเบื้องต้น ไม่ใช่ผลตรวจรับรองทางการจากหน่วยงานรัฐ</p>
   `;
