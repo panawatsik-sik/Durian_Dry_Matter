@@ -519,7 +519,7 @@ let sampleSeq = 0;
 
 function newSample(fresh, plate, dryQuick, rounds, fruitWeight){
   sampleSeq++;
-  return { id:'s'+sampleSeq, fresh: fresh, plate: plate, dryQuick: dryQuick, rounds: rounds, fruitWeight: fruitWeight||0 };
+  return { id:'s'+sampleSeq, fresh: fresh, plate: plate, dryQuick: dryQuick, rounds: rounds, fruitWeight: (fruitWeight===undefined?null:fruitWeight) };
 }
 function newFarm(){
   farmSeq++;
@@ -527,7 +527,7 @@ function newFarm(){
     id: 'f'+farmSeq,
     variety: VARIETY_OPTIONS[0].value,
     farmName: '', plot: '', daa: '', gps: '',
-    samples: [ newSample(20, 5.0, 11.6, [11.9, 11.6], 0) ]
+    samples: [ newSample(null, null, null, [null, null], null) ]
   };
 }
 function addFarm(){
@@ -548,7 +548,7 @@ function updateFarmField(farmId, field, value){
 function addSampleToFarm(farmId){
   const f = farms.find(x=>x.id===farmId);
   if(!f) return;
-  f.samples.push(newSample(20, 5.0, 11.6, [11.9, 11.6], 0));
+  f.samples.push(newSample(null, null, null, [null, null], null));
   renderFarms();
 }
 function removeSampleFromFarm(farmId, sampleId){
@@ -561,7 +561,9 @@ function updateSampleField(farmId, sampleId, field, value){
   const f = farms.find(x=>x.id===farmId);
   const s = f && f.samples.find(x=>x.id===sampleId);
   if(!s) return;
-  s[field] = parseFloat(value) || 0;
+  if(value===''){ s[field] = null; return; }
+  const v = parseFloat(value);
+  s[field] = isNaN(v) ? null : v;
 }
 function addRound(farmId, sampleId){
   const f = farms.find(x=>x.id===farmId);
@@ -614,20 +616,21 @@ function sampleDry(s){
 }
 
 function sampleCardHtml(f, s, sidx){
+  const vv = n => (n===null || n===undefined) ? '' : n;
   const fruitWeightRow = `
     <div class="field" style="margin-bottom:10px;">
       <label>${t('lbl_fruit_weight')}</label>
-      <input type="number" step="0.01" value="${s.fruitWeight}" placeholder="3.20" oninput="updateSampleField('${f.id}','${s.id}','fruitWeight',this.value)">
+      <input type="number" step="0.01" value="${vv(s.fruitWeight)}" placeholder="3.20" oninput="updateSampleField('${f.id}','${s.id}','fruitWeight',this.value)">
     </div>`;
   const plateFreshRow = `
     <div class="field-row" style="margin-bottom:10px;">
       <div class="field" style="margin-bottom:0;">
         <label>${t('lbl_fresh')}</label>
-        <input type="number" step="0.01" value="${s.fresh}" oninput="updateSampleField('${f.id}','${s.id}','fresh',this.value)">
+        <input type="number" step="0.01" value="${vv(s.fresh)}" placeholder="20.00" oninput="updateSampleField('${f.id}','${s.id}','fresh',this.value)">
       </div>
       <div class="field" style="margin-bottom:0;">
         <label>${t('lbl_plate')}</label>
-        <input type="number" step="0.01" value="${s.plate}" oninput="updateSampleField('${f.id}','${s.id}','plate',this.value)">
+        <input type="number" step="0.01" value="${vv(s.plate)}" placeholder="5.00" oninput="updateSampleField('${f.id}','${s.id}','plate',this.value)">
       </div>
     </div>`;
   let body;
@@ -637,7 +640,7 @@ function sampleCardHtml(f, s, sidx){
       ${plateFreshRow}
       <div class="field" style="margin-bottom:0;">
         <label>${t('lbl_dry')}</label>
-        <input type="number" step="0.01" value="${s.dryQuick}" oninput="updateSampleField('${f.id}','${s.id}','dryQuick',this.value)">
+        <input type="number" step="0.01" value="${vv(s.dryQuick)}" placeholder="11.60" oninput="updateSampleField('${f.id}','${s.id}','dryQuick',this.value)">
       </div>`;
   } else {
     const rows = s.rounds.map((r,i)=>`
@@ -793,6 +796,35 @@ async function calculateAndSaveAll(){
   renderHistory();
 }
 
+/* ---------- thorn-tick radial gauge (returns an SVG string, so several can be shown at once) ---------- */
+function renderGaugeSVG(pct, threshold, status){
+  const cx=110, cy=115, r=88;
+  const clamped = Math.max(0, Math.min(45, pct));
+  const valAngle = 180 - (clamped/45)*180;
+  const color = status==='pass' ? '#3F8F5C' : status==='fail' ? '#C24A3D' : '#5C6B57';
+
+  let ticks = '';
+  const nTicks = 28;
+  for(let i=0;i<=nTicks;i++){
+    const a = 180 - (i/nTicks)*180;
+    const rad = a*Math.PI/180;
+    const x1 = cx + (r-2)*Math.cos(rad), y1 = cy - (r-2)*Math.sin(rad);
+    const x2 = cx + (r+8)*Math.cos(rad), y2 = cy - (r+8)*Math.sin(rad);
+    const isThresholdTick = (threshold!==null && threshold!==undefined) && Math.abs((i/nTicks)*45 - threshold) < 0.85;
+    ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${isThresholdTick? '#B87C22':'#D8DECB'}" stroke-width="${isThresholdTick?3:1.5}"/>`;
+  }
+  const rad = valAngle*Math.PI/180;
+  const needleX = cx + r*0.72*Math.cos(rad), needleY = cy - r*0.72*Math.sin(rad);
+
+  return `<svg viewBox="0 0 220 130" width="220" height="130">
+    <path d="M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}" fill="none" stroke="#EFF1E6" stroke-width="14" stroke-linecap="round"/>
+    ${ticks}
+    <path d="M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r*Math.cos(rad)} ${cy-r*Math.sin(rad)}" fill="none" stroke="${color}" stroke-width="14" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="5" fill="${color}"/>
+    <line x1="${cx}" y1="${cy}" x2="${needleX}" y2="${needleY}" stroke="${color}" stroke-width="3" stroke-linecap="round"/>
+  </svg>`;
+}
+
 function renderBatchResults(results){
   const el = document.getElementById('batch-results');
   if(!results.length){ el.classList.add('hidden'); el.innerHTML=''; return; }
@@ -818,12 +850,10 @@ function renderBatchResults(results){
     }).join('');
 
     return `<div class="card" style="margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-        <div class="hist-pct" style="background:${badgeClass==='pass'?'#E7F3EA':badgeClass==='fail'?'#FBEBE8':'#EFEFEA'};color:${badgeClass==='pass'?'#3F8F5C':badgeClass==='fail'?'#C24A3D':'#5C6B57'};flex-shrink:0;">${r.pct.toFixed(1)}%</div>
-        <div style="min-width:0;">
-          <p class="v" style="font-size:13.5px;font-weight:600;font-family:'Kanit';margin:0;">${r.variety}${place ? ' · '+place : ''}</p>
-          <p class="m" style="font-size:12px;color:var(--text-secondary);margin:2px 0 0;">${r.sampleCount||1} ${t('samples_count')}</p>
-        </div>
+      <div class="gauge-wrap">
+        ${renderGaugeSVG(r.pct, r.threshold, r.status)}
+        <div class="gauge-val mono">${r.pct.toFixed(1)}%</div>
+        <div class="gauge-sub">${r.variety}${place ? ' · '+place : ''}</div>
       </div>
       <div style="text-align:center;">
         <div class="status-badge ${badgeClass}" style="margin-bottom:10px;">${badgeText}</div>
