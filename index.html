@@ -797,22 +797,46 @@ function renderBatchResults(results){
   const el = document.getElementById('batch-results');
   if(!results.length){ el.classList.add('hidden'); el.innerHTML=''; return; }
   el.classList.remove('hidden');
-  const rows = results.map(r=>{
-    const color = r.status==='pass' ? {bg:'#E7F3EA',fg:'#3F8F5C'} : r.status==='fail' ? {bg:'#FBEBE8',fg:'#C24A3D'} : {bg:'#EFEFEA',fg:'#5C6B57'};
+  const cards = results.map(r=>{
     const place = [r.farm, r.plot].filter(Boolean).join(' / ');
-    const statusText = r.status==='pass' ? t('pass') : r.status==='fail' ? t('fail') : t('no_threshold');
-    return `<div class="hist-card">
-      <div class="hist-pct" style="background:${color.bg};color:${color.fg};">${r.pct.toFixed(1)}%</div>
-      <div class="hist-body">
-        <p class="v">${r.variety}${place ? ' · '+place : ''}</p>
-        <p class="m">${statusText} · ${r.sampleCount||1} ${t('samples_count')}</p>
+    const hasThreshold = r.threshold!==null && r.threshold!==undefined;
+    const failingSeqs = hasThreshold ? (r.samples||[]).filter(s=>s.pct < r.threshold).map(s=>s.seq) : [];
+
+    let badgeClass, badgeText;
+    if(!hasThreshold){
+      badgeClass = 'neutral'; badgeText = t('no_threshold');
+    } else if(r.status==='pass'){
+      badgeClass = 'pass'; badgeText = '✓ ' + t('pass') + ' (' + r.threshold + '%)';
+    } else {
+      badgeClass = 'fail';
+      badgeText = '✕ ' + t('fail') + ' (' + r.threshold + '%)' + (failingSeqs.length ? ' — ' + t('sample_label') + ' ' + failingSeqs.join(', ') : '');
+    }
+
+    const chips = (r.samples||[]).map(s=>{
+      const st = hasThreshold ? (s.pct>=r.threshold ? 'pass':'fail') : '';
+      return `<div class="breakdown-chip"><span class="n">${t('sample_label')} ${s.seq}</span><span class="p ${st}">${s.pct.toFixed(1)}%</span></div>`;
+    }).join('');
+
+    return `<div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div class="hist-pct" style="background:${badgeClass==='pass'?'#E7F3EA':badgeClass==='fail'?'#FBEBE8':'#EFEFEA'};color:${badgeClass==='pass'?'#3F8F5C':badgeClass==='fail'?'#C24A3D':'#5C6B57'};flex-shrink:0;">${r.pct.toFixed(1)}%</div>
+        <div style="min-width:0;">
+          <p class="v" style="font-size:13.5px;font-weight:600;font-family:'Kanit';margin:0;">${r.variety}${place ? ' · '+place : ''}</p>
+          <p class="m" style="font-size:12px;color:var(--text-secondary);margin:2px 0 0;">${r.sampleCount||1} ${t('samples_count')}</p>
+        </div>
       </div>
-      <button class="hist-del" onclick="downloadPDF(batchResultsCache['${r.id}'])" title="download PDF">📄</button>
-      <button class="hist-del" onclick="downloadExcel(batchResultsCache['${r.id}'])" title="download Excel">📊</button>
+      <div style="text-align:center;">
+        <div class="status-badge ${badgeClass}" style="margin-bottom:10px;">${badgeText}</div>
+      </div>
+      ${chips}
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="ghost-btn" style="flex:1;padding:8px;" onclick="downloadPDF(batchResultsCache['${r.id}'])">📄 PDF</button>
+        <button class="ghost-btn" style="flex:1;padding:8px;" onclick="downloadExcel(batchResultsCache['${r.id}'])">📊 Excel</button>
+      </div>
     </div>`;
   }).join('');
-  el.innerHTML = `<p class="section-label">${t('batch_results_title')}</p>${rows}
-    <button class="ghost-btn" style="margin-top:10px;" onclick="downloadBatchExcel()">
+  el.innerHTML = `<p class="section-label">${t('batch_results_title')}</p>${cards}
+    <button class="ghost-btn" style="margin-top:4px;" onclick="downloadBatchExcel()">
       <span>📊</span> ${t('btn_excel_all')}
     </button>`;
 }
