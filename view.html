@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ข้อมูลดิบผลตรวจ — แอปหาน้ำหนักแห้งทุเรียน</title>
+<title>ข้อมูลดิบผลตรวจ — แอปหาน้ำหนักแห้ง</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Noto+Sans+Thai:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -34,6 +34,7 @@ th{background:#F0F2E8;font-weight:600;}
 .status-badge.pass{background:var(--success-bg);color:var(--success);}
 .status-badge.fail{background:var(--danger-bg);color:var(--danger);}
 .status-badge.none{background:#EFEFEA;color:var(--text-secondary);}
+.status-badge.ref{background:#FBF1DE;color:var(--gold-dark);border:1px solid #EFD9A8;}
 .disclaimer{font-size:11.5px;color:var(--text-muted);text-align:center;line-height:1.5;margin-top:14px;}
 .rounds-row td{background:#F7F8F2;font-size:11px;color:var(--text-secondary);padding:5px 8px;border-top:none;}
 .error-box{text-align:center;padding:3rem 1rem;color:var(--text-secondary);}
@@ -42,8 +43,8 @@ th{background:#F0F2E8;font-weight:600;}
 </head>
 <body>
 <div class="topbar">
-  <h1>ข้อมูลดิบผลตรวจน้ำหนักเนื้อแห้งทุเรียน</h1>
-  <p>แอปหาน้ำหนักแห้งทุเรียน · หน้าดูข้อมูลย้อนหลังจากการสแกน QR</p>
+  <h1 id="hdr-title">ข้อมูลดิบผลตรวจน้ำหนักเนื้อแห้ง</h1>
+  <p id="hdr-sub">หน้าดูข้อมูลย้อนหลังจากการสแกน QR</p>
 </div>
 <main id="main"></main>
 
@@ -72,8 +73,28 @@ function render(){
 
   const dateStr = r.d ? new Date(r.d).toLocaleDateString('th-TH', {day:'numeric',month:'long',year:'numeric'}) : '—';
   const methodText = r.m==='mw' ? 'ไมโครเวฟ' : 'ตู้อบลมร้อน';
-  const statusText = r.st==='pass' ? 'ผ่านเกณฑ์' : r.st==='fail' ? 'ไม่ผ่านเกณฑ์' : 'ไม่มีเกณฑ์ทางการ';
-  const statusClass = r.st==='pass' ? 'pass' : r.st==='fail' ? 'fail' : 'none';
+
+  // fruit type: 'durian' judges pass/fail; 'avocado' is reference-only.
+  // Old QR codes: durian ones carry st=pass/fail; avocado ones have st absent/none.
+  const fruit = r.fr || (r.st==='pass'||r.st==='fail' ? 'durian' : 'avocado');
+  const hasThreshold = r.th!==null && r.th!==undefined;
+
+  // update header/title for the fruit
+  const fruitNameTh = fruit==='avocado' ? 'อะโวคาโด' : 'ทุเรียน';
+  document.title = 'ข้อมูลดิบผลตรวจ — แอปหาน้ำหนักแห้ง' + fruitNameTh;
+  document.getElementById('hdr-title').textContent = 'ข้อมูลดิบผลตรวจน้ำหนักเนื้อแห้ง' + fruitNameTh;
+  document.getElementById('hdr-sub').textContent = 'แอปหาน้ำหนักแห้ง' + fruitNameTh + ' · หน้าดูข้อมูลย้อนหลังจากการสแกน QR';
+
+  let statusText, statusClass;
+  if(fruit==='avocado'){
+    // reference-only, never pass/fail
+    statusText = hasThreshold ? ('📖 เกณฑ์อ้างอิง (มกษ. 31-2567) ' + r.th + '%') : 'ไม่มีเกณฑ์อ้างอิง';
+    statusClass = hasThreshold ? 'ref' : 'none';
+  } else {
+    // durian official pass/fail
+    statusText = r.st==='pass' ? 'ผ่านเกณฑ์' : r.st==='fail' ? 'ไม่ผ่านเกณฑ์' : 'ไม่มีเกณฑ์ทางการ';
+    statusClass = r.st==='pass' ? 'pass' : r.st==='fail' ? 'fail' : 'none';
+  }
 
   const rows = (r.s||[]).map(s=>`
     <tr>
@@ -90,7 +111,7 @@ function render(){
     <div class="card">
       <div class="pct-hero">
         <div class="val mono">${(r.pct||0).toFixed(1)}%</div>
-        <div class="status-badge ${statusClass}">${statusText}${r.th!==null && r.th!==undefined ? ' (เกณฑ์ '+r.th+'%)' : ''}</div>
+        <div class="status-badge ${statusClass}">${statusText}${(fruit!=='avocado' && hasThreshold) ? ' (เกณฑ์ '+r.th+'%)' : ''}</div>
       </div>
     </div>
     <p class="section-label">ข้อมูลสวน</p>
